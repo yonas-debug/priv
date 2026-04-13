@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private Terminal Space</title>
+
+<style>
+body {
+  margin:0;
+  font-family: monospace;
+  background:#000;
+  color:#00ff9f;
+}
+
+header {
+  padding:10px;
+  text-align:center;
+  border-bottom:1px solid #00ff9f;
+}
+
+.chat {
+  height:70vh;
+  overflow-y:auto;
+  padding:10px;
+}
+
+.msg {
+  margin:8px 0;
+  padding:10px;
+  border-radius:10px;
+  max-width:70%;
+}
+
+.me {
+  background:#003b2f;
+  margin-left:auto;
+}
+
+.other {
+  background:#021;
+}
+
+.time {
+  font-size:10px;
+  opacity:0.6;
+}
+
+input {
+  width:80%;
+  padding:10px;
+  background:#000;
+  color:#00ff9f;
+  border:1px solid #00ff9f;
+}
+
+button {
+  padding:10px;
+  background:#00ff9f;
+  border:none;
+  cursor:pointer;
+}
+
+.lock {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.hidden { display:none; }
+
+</style>
+</head>
+<body>
+
+<div id="lockScreen" class="lock">
+  <div>
+    <h2>🔐 ENTER ACCESS KEY</h2>
+    <input id="key" placeholder="Secret key">
+    <button onclick="unlock()">Enter</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+
+<header>
+  <h3>🟢 PRIVATE LINK ESTABLISHED</h3>
+</header>
+
+<div class="chat" id="chat"></div>
+
+<div style="display:flex;">
+  <input id="msg" placeholder="Type message...">
+  <button onclick="send()">➤</button>
+</div>
+
+<input type="file" id="file" onchange="sendFile()">
+
+<button onclick="recordVoice()">🎤 Voice</button>
+
+</div>
+
+<script>
+
+// 🔐 ULTRA PRIVATE KEY
+const SECRET = "hacker123";
+
+function unlock(){
+  if(key.value === SECRET){
+    lockScreen.classList.add('hidden');
+    app.classList.remove('hidden');
+  } else {
+    alert("ACCESS DENIED");
+  }
+}
+
+// 💬 CHAT (LOCAL DEMO)
+function send(){
+  const text = msg.value;
+  if(!text) return;
+
+  const time = new Date().toLocaleTimeString();
+
+  chat.innerHTML += `
+    <div class="msg me">
+      ${text}
+      <div class="time">${time}</div>
+    </div>`;
+
+  msg.value='';
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// 📁 FILE SHARE
+function sendFile(){
+  const file = document.getElementById('file').files[0];
+  if(!file) return;
+
+  const url = URL.createObjectURL(file);
+
+  chat.innerHTML += `
+    <div class="msg me">
+      <a href="${url}" target="_blank">📎 ${file.name}</a>
+    </div>`;
+}
+
+// 🎤 VOICE (basic)
+let recorder;
+
+function recordVoice(){
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    recorder = new MediaRecorder(stream);
+    recorder.start();
+
+    setTimeout(()=>{
+      recorder.stop();
+    },3000);
+
+    recorder.ondataavailable = e=>{
+      const url = URL.createObjectURL(e.data);
+
+      chat.innerHTML += `
+        <div class="msg me">
+          <audio controls src="${url}"></audio>
+        </div>`;
+    }
+  });
+}
+
+</script>
+
+
+
+<!-- 📅 EVENTS PAGE -->
+<div id="eventsPage" class="hidden">
+  <header>
+    <h3>📅 EVENTS TRACKER</h3>
+    <button onclick="backToChat()">⬅ Back</button>
+  </header>
+
+  <div id="eventsList"></div>
+
+  <input id="eventText" placeholder="New event...">
+  <button onclick="addEvent()">Add Event</button>
+</div>
+
+<script>
+
+// NAVIGATION
+function openEvents(){
+  app.classList.add('hidden');
+  eventsPage.classList.remove('hidden');
+}
+
+function backToChat(){
+  eventsPage.classList.add('hidden');
+  app.classList.remove('hidden');
+}
+
+// EVENT SYSTEM (WITH TRACKING)
+let events = [];
+
+function addEvent(){
+  const text = eventText.value;
+  if(!text) return;
+
+  const event = {
+    id: Date.now(),
+    text,
+    done:false
+  };
+
+  events.push(event);
+  renderEvents();
+  eventText.value='';
+}
+
+function toggleEvent(id){
+  const ev = events.find(e=>e.id===id);
+  ev.done = !ev.done;
+  renderEvents();
+}
+
+function deleteEvent(id){
+  events = events.filter(e=>e.id!==id);
+  renderEvents();
+}
+
+function renderEvents(){
+  eventsList.innerHTML='';
+
+  events.forEach(e=>{
+    eventsList.innerHTML += `
+      <div class="msg ${e.done ? 'other' : 'me'}">
+        ${e.text}
+        <br>
+        <button onclick="toggleEvent(${e.id})">
+          ${e.done ? '✅ Done' : '⏳ Pending'}
+        </button>
+        <button onclick="deleteEvent(${e.id})">🗑</button>
+      </div>
+    `;
+  });
+}
+
+</script>
+
+<!-- ADD BUTTON IN MAIN APP -->
+<button onclick="openEvents()">📅 Events</button>
+
+</body>
+</html>
